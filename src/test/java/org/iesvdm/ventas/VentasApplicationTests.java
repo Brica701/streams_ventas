@@ -6,12 +6,14 @@ import org.iesvdm.ventas.modelo.Pedido;
 import org.iesvdm.ventas.repositorio.ClienteRepository;
 import org.iesvdm.ventas.repositorio.ComercialRepository;
 import org.iesvdm.ventas.repositorio.PedidoRepository;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -81,6 +83,16 @@ class VentasApplicationTests {
         List<Pedido> list = pedidoRepository.findAll();
 
 
+        int count = 0;
+        Assertions.assertEquals(3, count,
+                "Deben existir exactamente 3 pedidos en 2017 con total > 500€");
+
+        List<Integer> ids = new ArrayList<>();
+        Assertions.assertIterableEquals(
+                java.util.Arrays.asList(5, 8, 12),
+                ids,
+                "Los IDs esperados son 5, 8 y 12"
+        );
 
     }
 
