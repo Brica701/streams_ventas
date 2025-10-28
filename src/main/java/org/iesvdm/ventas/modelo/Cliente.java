@@ -3,16 +3,19 @@ package org.iesvdm.ventas.modelo;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @Data
 @Entity
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Cliente implements java.io.Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Integer id;
 
     private String nombre;
@@ -21,7 +24,7 @@ public class Cliente implements java.io.Serializable {
     private String ciudad;
     private Integer categoria;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "cliente", fetch = FetchType.EAGER)
     private Set<Pedido> pedidos;
 
 }

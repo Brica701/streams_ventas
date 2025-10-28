@@ -3,21 +3,29 @@ package org.iesvdm.ventas.modelo;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.util.Date;
 
 @Data
 @Entity
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Pedido implements java.io.Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
 	private Integer id;
 
+    @ToString.Exclude
     @ManyToOne
+    @JoinColumn(name = "id_cliente")
     private Cliente cliente;
 
+    @ToString.Exclude
     @ManyToOne
+    @JoinColumn(name = "id_comercial")
 	private Comercial comercial;
 	private double total;
 	private Date fecha;
