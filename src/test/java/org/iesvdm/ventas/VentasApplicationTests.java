@@ -408,6 +408,24 @@ class VentasApplicationTests {
     void test16() {
 
         List<Pedido> list = pedidoRepository.findAll();
+        List<String> clientesFiltrados = list.stream()
+                .map(Pedido::getCliente)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted(
+                        Comparator.comparing(Cliente::getApellido1, Comparator.nullsLast(String::compareTo))
+                                .thenComparing(Cliente::getApellido2, Comparator.nullsLast(String::compareTo))
+                                .thenComparing(Cliente::getNombre, Comparator.nullsLast(String::compareTo))
+                )
+                .map(c -> String.format("%d - %s %s %s",
+                        c.getId(),
+                        c.getNombre() != null ? c.getNombre() : "",
+                        c.getApellido1() != null ? c.getApellido1() : "",
+                        c.getApellido2() != null ? c.getApellido2() : ""))
+                .toList();
+
+        System.out.println("Clientes que han realizado pedidos:");
+        clientesFiltrados.forEach(System.out::println);
 
     }
 
@@ -431,6 +449,9 @@ class VentasApplicationTests {
 
         List<Cliente> list = clienteRepository.findAll();
 
+
+
+
     }
 
     /**
@@ -442,6 +463,15 @@ class VentasApplicationTests {
     void test18() {
 
         List<Comercial> list = comercialRepository.findAll();
+        List<String> comercialesFiltrados = list.stream()
+                .map(c -> String.format("%d - %s %s %s",
+                        c.getId(),
+                        c.getNombre() != null ? c.getNombre() : "",
+                        c.getApellido1() != null ? c.getApellido1() : "",
+                        c.getApellido2() != null ? c.getApellido2() : ""))
+                .toList();
+        System.out.println("Comerciales que han realizado pedidos:");
+        comercialesFiltrados.forEach(System.out::println);
 
     }
 
@@ -454,6 +484,9 @@ class VentasApplicationTests {
 
         List<Pedido> list = pedidoRepository.findAll();
 
+
+
+
     }
 
 
@@ -464,6 +497,8 @@ class VentasApplicationTests {
     void test20() {
 
         List<Comercial> list = comercialRepository.findAll();
+
+
 
     }
 
@@ -536,6 +571,7 @@ class VentasApplicationTests {
 
         List<Cliente> list = clienteRepository.findAll();
 
+
     }
 
 
@@ -547,6 +583,7 @@ class VentasApplicationTests {
 
         List<Pedido> list = pedidoRepository.findAll();
 
+
     }
 
 
@@ -557,6 +594,7 @@ class VentasApplicationTests {
     void test28() {
 
         List<Pedido> list = pedidoRepository.findAll();
+
 
     }
 
@@ -572,6 +610,7 @@ class VentasApplicationTests {
 
         List<Pedido> list = pedidoRepository.findAll();
 
+
     }
 
 
@@ -583,6 +622,7 @@ class VentasApplicationTests {
     void test30() throws ParseException {
 
         List<Pedido> list = pedidoRepository.findAll();
+
 
     }
 
