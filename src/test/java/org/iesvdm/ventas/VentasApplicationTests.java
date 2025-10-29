@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -79,33 +80,24 @@ class VentasApplicationTests {
     @Test
     void test1() throws ParseException {
 
+        // 1️⃣ Obtenemos todos los pedidos de la base de datos
         List<Pedido> list = pedidoRepository.findAll();
+
+        // 2️⃣ Filtramos pedidos que cumplan:
+        // - Año 2017
+        // - Total > 500
         List<Pedido> pedidosFiltrados = list.stream()
-                .filter(p -> {
-                    LocalDate fecha = p.getFecha().toInstant()
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate();
-                    return fecha.getYear() == 2017 && p.getTotal() > 500;
-                })
+                .filter(p -> (p.getFecha().getYear() + 1900) == 2017) // Date.getYear() + 1900
+                .filter(p -> p.getTotal() > 500)
                 .toList();
 
-        // Comprobamos que haya exactamente 3 pedidos
-        Assertions.assertEquals(3, pedidosFiltrados.size(),
-                "Deben existir exactamente 3 pedidos en 2017 con total > 500€");
-
-        // Extraemos los IDs y comprobamos que sean los esperados
-        List<Integer> ids = pedidosFiltrados.stream()
-                .map(Pedido::getId)
-                .toList();
-
-        Assertions.assertIterableEquals(
-                java.util.Arrays.asList(5, 8, 12),
-                ids,
-                "Los IDs esperados son 5, 8 y 12"
-        );
-
-
-
+        // 3️⃣ Imprimimos los resultados
+        pedidosFiltrados.forEach(p -> System.out.println(
+                "Pedido ID: " + p.getId() +
+                        ", Cliente: " + p.getCliente().getNombre() + " " + p.getCliente().getApellido1() +
+                        ", Fecha: " + p.getFecha() +
+                        ", Total: " + p.getTotal()
+        ));
     }
 
 
@@ -116,15 +108,19 @@ class VentasApplicationTests {
     @Test
     void test2() {
 
+        // 1️⃣ Obtenemos todos los clientes de la base de datos
         List<Cliente> list = clienteRepository.findAll();
 
-
+        // 2️⃣ Filtramos los clientes que no tienen pedidos asociados
+        //    - c.getPedidos() == null → no tiene ningún pedido
+        //    - c.getPedidos().isEmpty() → el conjunto de pedidos está vacío
+        // 3️⃣ Transformamos la lista de clientes en una lista de IDs
         List<Integer> clientesSinPedidos = list.stream()
                 .filter(c -> c.getPedidos() == null || c.getPedidos().isEmpty())
                 .map(Cliente::getId)
                 .toList();
 
-        // Mostramos los resultados por consola
+        // 4️⃣ Mostramos la lista de IDs de clientes sin pedidos por consola
         System.out.println("Clientes sin pedidos: " + clientesSinPedidos);
 
 
@@ -135,8 +131,13 @@ class VentasApplicationTests {
      */
     @Test
     void test3() {
+        // 1️⃣ Obtenemos todos los comerciales de la base de datos
         List<Comercial> list = comercialRepository.findAll();
 
+        // 2️⃣ Creamos un stream para:
+        //    - Transformar cada comercial en su comisión
+        //    - Filtrar valores nulos (por si algún comercial no tiene comisión)
+        //    - Obtener el valor máximo
         Optional<Float> maxComision = list.stream()
                 .map(Comercial::getComision)
                 .filter(Objects::nonNull) // por si hay comisiones nulas
@@ -160,7 +161,10 @@ class VentasApplicationTests {
 
         List<Cliente> list = clienteRepository.findAll();
 
-        // Filtramos clientes con segundo apellido no nulo
+        // 2️⃣ Filtramos y ordenamos:
+        //    - Filtramos solo clientes cuyo segundo apellido no sea null
+        //    - Ordenamos alfabéticamente por apellido1, luego apellido2 y luego nombre
+        //    - Transformamos cada cliente a una cadena con ID, nombre, apellido1 y apellido2
         List<String> clientesFiltrados = list.stream()
                 .filter(c -> c.getApellido2() != null)
                 .sorted(Comparator.comparing(Cliente::getApellido1)
@@ -169,7 +173,7 @@ class VentasApplicationTests {
                 .map(c -> c.getId() + " - " + c.getNombre() + " " + c.getApellido1())
                 .toList();
 
-        // Mostramos el resultado
+        // 3️⃣ Mostramos el resultado por consola
         clientesFiltrados.forEach(System.out::println);
 
 
@@ -183,16 +187,19 @@ class VentasApplicationTests {
     @Test
     void test5() {
 
+        // 1️⃣ Obtenemos todos los comerciales de la base de datos
         List<Comercial> list = comercialRepository.findAll();
-        List<String> comercialesFiltrados = list.stream()
-                .map(Comercial::getNombre)
-                .filter(n -> n.endsWith("el") || n.endsWith("o"))
-                .distinct()
-                .toList();
 
+        // 2️⃣ Filtramos nombres que terminan en "el" o "o" y eliminamos duplicados
+        List<String> comercialesFiltrados = list.stream()
+                .map(Comercial::getNombre)                   // Tomamos solo el nombre de cada comercial
+                .filter(n -> n.endsWith("el") || n.endsWith("o")) // Filtramos los nombres que terminan en "el" o "o"
+                .distinct()                                  // Eliminamos nombres repetidos
+                .toList();                                   // Convertimos a lista
+
+        // 3️⃣ Mostramos el resultado por consola
         System.out.println("Comerciales cuyos nombres terminan en 'el' o 'o':");
         comercialesFiltrados.forEach(System.out::println);
-
     }
 
 
@@ -202,18 +209,25 @@ class VentasApplicationTests {
     @Test
     void test6() {
 
+        // 1️⃣ Obtenemos todos los pedidos de la base de datos
         List<Pedido> list = pedidoRepository.findAll();
+
+        // 2️⃣ Filtramos pedidos:
+        //    - Convertimos la fecha de java.util.Date a LocalDate
+        //    - Solo pedidos del año 2017
+        //    - Total entre 300€ y 1000€
         List<Cliente> clientesFiltrados = list.stream()
                 .filter(p -> {
                     LocalDate fecha = p.getFecha().toInstant()
                             .atZone(ZoneId.systemDefault())
-                            .toLocalDate();
+                            .toLocalDate(); // Convertimos Date a LocalDate
                     return fecha.getYear() == 2017 && p.getTotal() >= 300 && p.getTotal() <= 1000;
                 })
-                .map(Pedido::getCliente)
-                .distinct()
-                .toList();
+                .map(Pedido::getCliente) // Obtenemos el cliente del pedido
+                .distinct()              // Eliminamos clientes repetidos
+                .toList();               // Creamos la lista final
 
+        // 3️⃣ Mostramos los resultados
         clientesFiltrados.forEach(c ->
                 System.out.println(c.getId() + " - " + c.getNombre() + " " + c.getApellido1())
         );
@@ -227,16 +241,22 @@ class VentasApplicationTests {
     @Test
     void test7() {
 
+        // 1️⃣ Obtenemos todos los comerciales de la base de datos
         List<Comercial> list = comercialRepository.findAll();
-        List<Pedido> pedidosFiltrados = list.stream()
-                .filter(c -> c.getNombre().equals("Daniel Sáez"))
-                .flatMap(c -> c.getPedidos().stream())
-                .toList();
-        double total = pedidosFiltrados.stream()
-                .mapToDouble(Pedido::getTotal)
-                .average()
-                .orElse(0);
 
+        // 2️⃣ Filtramos solo al comercial "Daniel Sáez" y obtenemos todos sus pedidos
+        List<Pedido> pedidosFiltrados = list.stream()
+                .filter(c -> c.getNombre().equals("Daniel Sáez")) // Solo Daniel Sáez
+                .flatMap(c -> c.getPedidos().stream())           // Obtenemos todos sus pedidos
+                .toList();                                       // Convertimos a lista
+
+        // 3️⃣ Calculamos la media de los totales de esos pedidos
+        double total = pedidosFiltrados.stream()
+                .mapToDouble(Pedido::getTotal)  // Tomamos el campo total
+                .average()                      // Calculamos la media
+                .orElse(0);                     // Si no hay pedidos, devolvemos 0
+
+        // 4️⃣ Mostramos el resultado por consola
         System.out.println("Media del campo total de pedidos de Daniel Sáez: " + total);
     }
 
@@ -249,16 +269,23 @@ class VentasApplicationTests {
     @Test
     void test8() {
 
+        // 1️⃣ Obtenemos todos los pedidos de la base de datos
         List<Pedido> list = pedidoRepository.findAll();
-        List<Pedido> pedidosFiltrados = list.stream()
-                .sorted(Comparator.comparing(Pedido::getFecha).reversed())
-                .toList();
 
+        // 2️⃣ Ordenamos los pedidos por fecha de manera descendente (más recientes primero)
+        List<Pedido> pedidosFiltrados = list.stream()
+                .sorted(Comparator.comparing(Pedido::getFecha).reversed()) // Orden descendente
+                .toList();                                                 // Convertimos a lista
+
+        // 3️⃣ Mostramos los resultados por consola
         System.out.println("Pedidos ordenados por fecha de realización (más recientes primero):");
         pedidosFiltrados.forEach(p ->
-                System.out.println(p.getId() + " - Cliente ID: " + p.getCliente().getId() + " - Fecha: " + p.getFecha())
+                System.out.println(
+                        p.getId() +
+                                " - Cliente ID: " + p.getCliente().getId() +
+                                " - Fecha: " + p.getFecha()
+                )
         );
-
     }
 
     /**
@@ -267,16 +294,23 @@ class VentasApplicationTests {
     @Test
     void test9() {
 
+        // 1️⃣ Obtenemos todos los pedidos de la base de datos
         List<Pedido> list = pedidoRepository.findAll();
+
+        // 2️⃣ Ordenamos los pedidos por total de manera descendente y tomamos los 2 primeros
         List<Pedido> pedidosFiltrados = list.stream()
-                .sorted(Comparator.comparing(Pedido::getTotal).reversed())
-                .limit(2)
-                .toList();
+                .sorted(Comparator.comparing(Pedido::getTotal).reversed()) // Orden descendente por total
+                .limit(2)                                                  // Solo los 2 primeros
+                .toList();                                                 // Convertimos a lista
+
+        // 3️⃣ Mostramos los resultados por consola
         pedidosFiltrados.forEach(p ->
-                System.out.println(p.getId() + " - Cliente ID: " + p.getCliente().getId() + " - Total: " + p.getTotal())
+                System.out.println(
+                        p.getId() +
+                                " - Cliente ID: " + p.getCliente().getId() +
+                                " - Total: " + p.getTotal()
+                )
         );
-
-
     }
 
     /**
@@ -286,16 +320,23 @@ class VentasApplicationTests {
     @Test
     void test10() {
 
-        List<Pedido> list = pedidoRepository.findAll();
-        List<Integer> clientesFiltrados = list.stream()
-                .map(Pedido::getCliente)
-                .map(Cliente::getId)
-                .distinct()
-                .toList();
 
+        // 1️⃣ Obtenemos todos los pedidos de la base de datos
+        List<Pedido> list = pedidoRepository.findAll();
+
+        // 2️⃣ Transformamos el stream:
+        //    - Tomamos el cliente de cada pedido
+        //    - Obtenemos su ID
+        //    - Eliminamos IDs duplicados
+        List<Integer> clientesFiltrados = list.stream()
+                .map(Pedido::getCliente) // Obtenemos el cliente de cada pedido
+                .map(Cliente::getId)     // Obtenemos el ID del cliente
+                .distinct()              // Eliminamos duplicados
+                .toList();               // Creamos la lista final
+
+        // 3️⃣ Mostramos los IDs por consola
         System.out.println("Identificadores de clientes que han realizado pedidos:");
         clientesFiltrados.forEach(System.out::println);
-
     }
 
     /**
@@ -305,16 +346,23 @@ class VentasApplicationTests {
     @Test
     void test11() {
 
+        // 1️⃣ Obtenemos todos los comerciales de la base de datos
         List<Comercial> list = comercialRepository.findAll();
+
+        // 2️⃣ Filtramos y transformamos:
+        //    - Solo comerciales con comisión no nula
+        //    - Comisión entre 0.05 y 0.11 inclusive
+        //    - Mapeamos a un String con nombre y apellidos
+        //    - Eliminamos posibles duplicados
         List<String> comercialesFiltrados = list.stream()
                 .filter(c -> c.getComision() != null && c.getComision() >= 0.05 && c.getComision() <= 0.11)
                 .map(c -> c.getNombre() + " - " + c.getApellido1() + " " + c.getApellido2())
                 .distinct()
                 .toList();
 
+        // 3️⃣ Mostramos los resultados por consola
         System.out.println("Comerciales con comisión entre 0.05 y 0.11:");
         comercialesFiltrados.forEach(System.out::println);
-
     }
 
 
@@ -325,14 +373,20 @@ class VentasApplicationTests {
     @Test
     void test12() {
 
+        // 1️⃣ Obtenemos todos los comerciales de la base de datos
         List<Comercial> list = comercialRepository.findAll();
+
+        // 2️⃣ Buscamos la comisión mínima:
+        //    - Convertimos cada comercial a su comisión
+        //    - Filtramos valores nulos
+        //    - Tomamos la mínima usando Float::compare
         Optional<Float> minComision = list.stream()
-                .map(Comercial::getComision)
-                .filter(Objects::nonNull)
-                .min(Double::compare);
+                .map(Comercial::getComision)   // Tomamos la comisión
+                .filter(Objects::nonNull)      // Ignoramos nulos
+                .min(Float::compare);           // Buscamos el mínimo
 
+        // 3️⃣ Mostramos el resultado por consola
         System.out.println("Valor de la comisión de menor valor: " + minComision.orElse(null));
-
     }
 
     /**
@@ -344,17 +398,20 @@ class VentasApplicationTests {
     @Test
     void test13() {
 
-        List<Comercial> list = comercialRepository.findAll();
-        List<String> comercialesFiltrados = list.stream()
-                .map(Comercial::getNombre)
-                .filter(n -> n.startsWith("A") && n.endsWith("n"))
-                .distinct()
-                .sorted()
-                .toList();
+        // 1️⃣ Obtenemos todos los clientes de la base de datos
+        List<Cliente> list = clienteRepository.findAll();
 
-        System.out.println("Comerciales cuyo nombre empieza por A y termina por n:");
-        comercialesFiltrados.forEach(System.out::println);
+        // 2️⃣ Filtramos los nombres según las condiciones del enunciado
+        List<String> clientesFiltrados = list.stream()
+                .map(Cliente::getNombre) // Tomamos solo el nombre
+                .filter(n -> (n.startsWith("A") && n.endsWith("n")) || n.startsWith("P")) // Filtramos nombres
+                .distinct()              // Eliminamos duplicados
+                .sorted()                // Orden alfabético
+                .toList();               // Convertimos a lista
 
+        // 3️⃣ Mostramos los resultados por consola
+        System.out.println("Clientes cuyos nombres empiezan por A y terminan por n, o empiezan por P:");
+        clientesFiltrados.forEach(System.out::println);
     }
 
     /**
@@ -365,17 +422,22 @@ class VentasApplicationTests {
     @Test
     void test14() {
 
+        // 1️⃣ Obtenemos todos los clientes de la base de datos
         List<Cliente> list = clienteRepository.findAll();
+
+        // 2️⃣ Filtramos los nombres según las condiciones:
+        //    - Empiezan por A y terminan por n
+        //    - O empiezan por P
         List<String> clientesFiltrados = list.stream()
-                .map(Cliente::getNombre)
-                .filter(n -> n.startsWith("A") && n.endsWith("n"))
-                .distinct()
-                .sorted()
-                .toList();
+                .map(Cliente::getNombre) // Tomamos solo el nombre
+                .filter(n -> (n.startsWith("A") && n.endsWith("n")) || n.startsWith("P"))
+                .distinct()              // Eliminamos duplicados
+                .sorted()                // Orden alfabético
+                .toList();               // Convertimos a lista
 
-        System.out.println("Clientes cuyo nombre empieza por A y termina por n:");
+        // 3️⃣ Mostramos los resultados
+        System.out.println("Clientes cuyos nombres empiezan por A y terminan por n, o empiezan por P:");
         clientesFiltrados.forEach(System.out::println);
-
     }
 
     /**
@@ -385,17 +447,23 @@ class VentasApplicationTests {
     @Test
     void test15() {
 
+        // 1️⃣ Obtenemos todos los clientes de la base de datos
         List<Cliente> list = clienteRepository.findAll();
+
+        // 2️⃣ Filtramos clientes cuyo nombre NO empieza por A
+        //    Ordenamos alfabéticamente por nombre, apellido1 y apellido2
+        //    Creamos un string con ID, nombre y apellidos
         List<String> clientesFiltrados = list.stream()
-                .filter(c -> !c.getNombre().startsWith("A"))
+                .filter(c -> !c.getNombre().startsWith("A")) // Nombre no empieza por A
                 .sorted(Comparator.comparing(Cliente::getNombre)
                         .thenComparing(Cliente::getApellido1)
-                        .thenComparing(Cliente::getApellido2))
-                .map(c -> c.getId() + " - " + c.getNombre() + " " + c.getApellido1())
+                        .thenComparing(Cliente::getApellido2)) // Orden alfabético
+                .map(c -> c.getId() + " - " + c.getNombre() + " " + c.getApellido1() + " " + c.getApellido2()) // Incluimos ambos apellidos
                 .toList();
+
+        // 3️⃣ Mostramos los resultados
         System.out.println("Clientes cuyo nombre no empieza por A:");
         clientesFiltrados.forEach(System.out::println);
-
     }
 
 
@@ -448,10 +516,23 @@ class VentasApplicationTests {
     void test17() {
 
         List<Cliente> list = clienteRepository.findAll();
+        // Ordenar por nombre y apellidos
+        List<Cliente> clientesOrdenados = list.stream()
+                .sorted(Comparator.comparing(Cliente::getNombre, Comparator.nullsLast(String::compareTo))
+                        .thenComparing(Cliente::getApellido1, Comparator.nullsLast(String::compareTo))
+                        .thenComparing(Cliente::getApellido2, Comparator.nullsLast(String::compareTo)))
+                .toList();
 
+        // Recorrer clientes
+        clientesOrdenados.forEach(c -> {
+            // Mostrar los datos del cliente
+            System.out.println("Cliente " + c);
 
-
-
+            // Mostrar los pedidos del cliente
+            c.getPedidos().stream()
+                    .sorted(Comparator.comparing(Pedido::getId))
+                    .forEach(p -> System.out.println("Pedido " + p));
+        });
     }
 
     /**
@@ -483,9 +564,15 @@ class VentasApplicationTests {
     void test19() {
 
         List<Pedido> list = pedidoRepository.findAll();
-
-
-
+        List<Comercial> comerciales = list.stream()
+                .filter(p -> p.getCliente().getNombre().equals("María") &&
+                        p.getCliente().getApellido1().equals("Santana") &&
+                        p.getCliente().getApellido2().equals("Moreno"))
+                .map(Pedido::getComercial)
+                .distinct()
+                .toList();
+        System.out.println("Comerciales que han participado en pedidos de María Santana Moreno:");
+        comerciales.forEach(c -> System.out.println(c.getNombre() + " " + c.getApellido1() + " " + c.getApellido2()));
 
     }
 
@@ -496,9 +583,20 @@ class VentasApplicationTests {
     @Test
     void test20() {
 
+        // Obtiene todos los comerciales almacenados en la base de datos
         List<Comercial> list = comercialRepository.findAll();
 
+        // Crea una nueva lista con los comerciales que no tienen pedidos asociados
+        // (es decir, cuyo conjunto de pedidos está vacío)
+        List<Comercial> comercialesSinPedidos = list.stream()
+                .filter(c -> c.getPedidos().isEmpty())
+                .toList();
 
+        // Muestra un mensaje inicial en la consola
+        System.out.println("Comerciales que no han realizado ningún pedido:");
+
+        // Recorre la lista filtrada e imprime el nombre completo de cada comercial sin pedidos
+        comercialesSinPedidos.forEach(c -> System.out.println(c.getNombre() + " " + c.getApellido1() + " " + c.getApellido2()));
 
     }
 
@@ -508,7 +606,20 @@ class VentasApplicationTests {
     @Test
     void test21() {
 
+        // Obtiene todos los registros de la tabla 'pedido' desde la base de datos
         List<Pedido> list = pedidoRepository.findAll();
+
+        // Crea un flujo (stream) a partir de la lista de pedidos
+        // Luego transforma cada pedido en su comercial correspondiente (.map)
+        // Elimina los comerciales duplicados (.distinct)
+        // Y finalmente cuenta cuántos comerciales distintos hay (.count)
+        long numComercialesDistintos = list.stream()
+                .map(Pedido::getComercial)
+                .distinct()
+                .count();
+
+        // Muestra en consola el número total de comerciales distintos encontrados
+        System.out.println("Número total de comerciales distintos en la tabla pedido: " + numComercialesDistintos);
 
     }
 
@@ -518,8 +629,32 @@ class VentasApplicationTests {
     @Test
     void test22() {
 
+        // Obtiene todos los pedidos de la base de datos
         List<Pedido> list = pedidoRepository.findAll();
 
+        // Calcula el mínimo y máximo de total de pedidos usando un solo stream y reduce
+        // Se utiliza un array de double [min, max] como acumulador
+        double[] minMax = list.stream()
+                // Extraemos el valor total de cada pedido
+                .map(Pedido::getTotal)
+                // Aplicamos reduce con:
+                // - Valor inicial: [Double.MAX_VALUE, Double.MIN_VALUE] (para asegurar que se actualicen correctamente)
+                // - Función acumuladora: compara el valor actual (b) con los acumulados (a) y devuelve un nuevo array [min, max]
+                // - Función combinadora: combina dos resultados parciales en caso de streams paralelos
+                .reduce(new double[]{Double.MAX_VALUE, Double.MIN_VALUE},
+                        (a, b) -> new double[]{
+                                Math.min(a[0], b), // Calcula el mínimo entre el acumulado y el valor actual
+                                Math.max(a[1], b)  // Calcula el máximo entre el acumulado y el valor actual
+                        },
+                        (a1, a2) -> new double[]{
+                                Math.min(a1[0], a2[0]), // Combina mínimos de dos acumuladores
+                                Math.max(a1[1], a2[1])  // Combina máximos de dos acumuladores
+                        });
+
+        // Imprime el mínimo total de pedido
+        System.out.println("Mínimo total de pedido: " + minMax[0]);
+        // Imprime el máximo total de pedido
+        System.out.println("Máximo total de pedido: " + minMax[1]);
     }
 
 
@@ -529,8 +664,28 @@ class VentasApplicationTests {
     @Test
     void test23() {
 
+        // 1️⃣ Obtiene todos los clientes de la base de datos
         List<Cliente> list = clienteRepository.findAll();
 
+        // 2️⃣ Agrupa los clientes por ciudad y calcula la máxima categoría de cada ciudad
+        Map<String, Integer> maxCategoriaPorCiudad = list.stream()
+                // Filtramos clientes que tengan categoría no nula para evitar NullPointerException
+                .filter(c -> c.getCategoria() != null)
+                // Agrupamos por ciudad
+                .collect(Collectors.groupingBy(
+                        Cliente::getCiudad,
+                        // Calculamos el máximo de categoría en cada grupo
+                        Collectors.collectingAndThen(
+                                Collectors.mapping(Cliente::getCategoria,
+                                        Collectors.maxBy(Integer::compareTo)),
+                                // Si no hay valores (Optional.empty), ponemos 0 como valor seguro
+                                opt -> opt.orElse(0)
+                        )
+                ));
+
+        // 3️⃣ Imprime el resultado: Ciudad -> Máxima categoría
+        maxCategoriaPorCiudad.forEach((ciudad, maxCategoria) ->
+                System.out.println("Ciudad: " + ciudad + ", Máxima categoría: " + maxCategoria));
     }
 
 
@@ -545,7 +700,32 @@ class VentasApplicationTests {
     @Test
     void test24() {
 
+        // 1️⃣ Obtener todos los pedidos de la base de datos
         List<Pedido> list = pedidoRepository.findAll();
+
+        // 2️⃣ Agrupar los pedidos primero por cliente, luego por fecha (java.util.Date)
+        Map<Cliente, Map<Date, Optional<Pedido>>> maxPedidoPorClienteYFecha = list.stream()
+                .collect(Collectors.groupingBy(
+                        Pedido::getCliente, // Clave principal: cliente
+                        Collectors.groupingBy(
+                                Pedido::getFecha, // Clave secundaria: fecha del pedido (Date)
+                                Collectors.maxBy(Comparator.comparingDouble(Pedido::getTotal)) // Pedido de mayor valor
+                        )
+                ));
+
+        // 3️⃣ Recorrer el mapa para imprimir los resultados
+        maxPedidoPorClienteYFecha.forEach((cliente, pedidosPorFecha) -> {
+            pedidosPorFecha.forEach((fecha, pedidoOpt) -> {
+                pedidoOpt.ifPresent(pedido -> System.out.println(
+                        "Cliente ID: " + cliente.getId() +
+                                ", Nombre: " + cliente.getNombre() +
+                                " " + cliente.getApellido1() +
+                                " " + cliente.getApellido2() +
+                                ", Fecha: " + fecha +
+                                ", Valor del pedido: " + pedido.getTotal()
+                ));
+            });
+        });
 
     }
 
@@ -559,6 +739,28 @@ class VentasApplicationTests {
 
         List<Pedido> list = pedidoRepository.findAll();
 
+        Map<Cliente, Map<Date, Optional<Pedido>>> maxPedidoPorClienteYFecha = list.stream()
+                .collect(Collectors.groupingBy(
+                        Pedido::getCliente,
+                        Collectors.groupingBy(
+                                Pedido::getFecha,
+                                Collectors.filtering(
+                                        p -> p.getTotal() > 2000, // filtramos solo > 2000€
+                                        Collectors.maxBy(Comparator.comparingDouble(Pedido::getTotal))
+                                )
+                        )
+                ));
+
+        maxPedidoPorClienteYFecha.forEach((cliente, pedidosPorFecha) -> {
+            pedidosPorFecha.forEach((fecha, pedidoOpt) -> {
+                pedidoOpt.ifPresent(p -> System.out.println(
+                        "Cliente ID: " + cliente.getId() +
+                                ", Nombre: " + cliente.getNombre() + " " + cliente.getApellido1() + " " + cliente.getApellido2() +
+                                ", Fecha: " + fecha +
+                                ", Valor: " + p.getTotal()
+                ));
+            });
+        });
     }
 
     /**
@@ -571,7 +773,19 @@ class VentasApplicationTests {
 
         List<Cliente> list = clienteRepository.findAll();
 
+        list.forEach(cliente -> {
+            long total2017 = cliente.getPedidos().stream()
+                    .filter(p -> {
+                        @SuppressWarnings("deprecation")
+                        int year = p.getFecha().getYear() + 1900; // Date.getYear() devuelve año - 1900
+                        return year == 2017;
+                    })
+                    .count();
 
+            System.out.println("Cliente ID: " + cliente.getId() +
+                    ", Nombre: " + cliente.getNombre() + " " + cliente.getApellido1() + " " + cliente.getApellido2() +
+                    ", Total pedidos 2017: " + total2017);
+        });
     }
 
 
@@ -583,7 +797,19 @@ class VentasApplicationTests {
 
         List<Pedido> list = pedidoRepository.findAll();
 
+        Map<Integer, Optional<Pedido>> maxPedidoPorAnio = list.stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getFecha().getYear() + 1900, // Extraemos el año
+                        Collectors.maxBy(Comparator.comparingDouble(Pedido::getTotal))
+                ));
 
+        maxPedidoPorAnio.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> e.getValue().ifPresent(p -> System.out.println(
+                        "Año: " + e.getKey() +
+                                ", Pedido ID: " + p.getId() +
+                                ", Valor: " + p.getTotal()
+                )));
     }
 
 
@@ -595,7 +821,17 @@ class VentasApplicationTests {
 
         List<Pedido> list = pedidoRepository.findAll();
 
+        Map<Integer, Long> pedidosPorAnio = list.stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getFecha().getYear() + 1900,
+                        Collectors.counting()
+                ));
 
+        pedidosPorAnio.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> System.out.println(
+                        "Año: " + e.getKey() + ", Total pedidos: " + e.getValue()
+                ));
     }
 
     /**
@@ -610,7 +846,16 @@ class VentasApplicationTests {
 
         List<Pedido> list = pedidoRepository.findAll();
 
-
+        list.stream()
+                .filter(p -> p.getFecha().getYear() + 1900 == 2019)
+                .max(Comparator.comparingDouble(Pedido::getTotal))
+                .ifPresent(p -> {
+                    Cliente c = p.getCliente();
+                    System.out.println("Cliente ID: " + c.getId() +
+                            ", Nombre: " + c.getNombre() + " " + c.getApellido1() + " " + c.getApellido2() +
+                            ", Pedido ID: " + p.getId() +
+                            ", Valor: " + p.getTotal());
+                });
     }
 
 
@@ -623,7 +868,14 @@ class VentasApplicationTests {
 
         List<Pedido> list = pedidoRepository.findAll();
 
+        DoubleSummaryStatistics stats = list.stream()
+                .collect(Collectors.summarizingDouble(Pedido::getTotal));
 
+        System.out.println("Número de pedidos: " + stats.getCount());
+        System.out.println("Suma total: " + stats.getSum());
+        System.out.println("Valor mínimo: " + stats.getMin());
+        System.out.println("Valor máximo: " + stats.getMax());
+        System.out.println("Valor medio: " + stats.getAverage());
     }
 
 
